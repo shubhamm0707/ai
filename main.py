@@ -43,4 +43,7 @@ for i in range(len(sentences)):
     words = [lemmatizer.lemmatize(word) for word in words if word not in set(stopwords.words('english'))]
     sentences[i] = ' '.join(words)
 
+# here what is happening like i am getting the word which is not in stopwords. Then i take that word and send to
+# lemmatizer.lemmatize(word) to give the meaning to it like process that word.
+
 print(sentences)
