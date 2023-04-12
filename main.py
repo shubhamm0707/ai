@@ -1,66 +1,63 @@
 import nltk
+import numpy as np
+import random
+import string
 
-paragraph = """I have three visions for India. In 3000 years of our history, people from all over 
-               the world have come and invaded us, captured our lands, conquered our minds. 
-               From Alexander onwards, the Greeks, the Turks, the Moguls, the Portuguese, the British,
-               the French, the Dutch, all of them came and looted us, took over what was ours. 
-               Yet we have not done this to any other nation. We have not conquered anyone. 
-               We have not grabbed their land, their culture, 
-               their history and tried to enforce our way of life on them. 
-               Why? Because we respect the freedom of others.That is why my 
-               first vision is that of freedom. I believe that India got its first vision of 
-               this in 1857, when we started the War of Independence. It is this freedom that
-               we must protect and nurture and build on. If we are not free, no one will respect us.
-               My second vision for India’s development. For fifty years we have been a developing nation.
-               It is time we see ourselves as a developed nation. We are among the top 5 nations of the world
-               in terms of GDP. We have a 10 percent growth rate in most areas. Our poverty levels are falling.
-               Our achievements are being globally recognised today. Yet we lack the self-confidence to
-               see ourselves as a developed nation, self-reliant and self-assured. Isn’t this incorrect?
-               I have a third vision. India must stand up to the world. Because I believe that unless India 
-               stands up to the world, no one will respect us. Only strength respects strength. We must be 
-               strong not only as a military power but also as an economic power. Both must go hand-in-hand. 
-               My good fortune was to have worked with three great minds. Dr. Vikram Sarabhai of the Dept. of 
-               space, Professor Satish Dhawan, who succeeded him and Dr. Brahm Prakash, father of nuclear material.
-               I was lucky to have worked with all three of them closely and consider this the great opportunity of my life. 
-               I see four milestones in my career"""
+# Define the corpus of training data
+corpus = {
+     'seriously' : ['yes'],
+     'acha suno' : ['bolo', 'hn bolo na', 'yes mam boliye'],
+     'tabyt theek hai tumhari' : ['hn', 'hn yr theek hai', 'yes bilkul', 'tumse bat ho gyi to achi ho gyi yr'],
+     'or btao na' : ["missing you yr"],
+    'kya kar rhe ho' : ['kuch nhi yr bs ese hi', 'bs ese hi vella panti', 'kaam kr rha hun yr'],
+    'dinner ho gya' : ['hn ho gya, tumne kuch khaya', 'hn just abhi kiya', 'hn abhi khaya'],
+    'ok' : ['hnm']
+}
 
 
-# cleaning of words means lowering the words, removing the comma, apply stemma or limitization.
-import re
-# above is for regular expression
-from nltk.corpus import stopwords
-# its for stop words
-from nltk.stem.porter import PorterStemmer
-# for stemma
-from nltk.stem import WordNetLemmatizer
-# for limitization
+# Define a function to preprocess the training data
+def preprocess(text):
+    # Convert the text to lowercase
+    text = text.lower()
+    # Remove punctuation
+    text = ''.join([c for c in text if c not in string.punctuation])
+    # Tokenize the text
+    tokens = nltk.word_tokenize(text)
+    # Remove stop words
+    # tokens = [word for word in tokens if word not in nltk.corpus.stopwords.words('english')]
+    # Stem the words
+    stemmer = nltk.stem.porter.PorterStemmer()
+    tokens = [stemmer.stem(word) for word in tokens]
+    # Join the tokens back into a string
+    return ' '.join(tokens)
 
-ps = PorterStemmer()
-wordnet = WordNetLemmatizer()
-sentences = nltk.sent_tokenize(paragraph)
-corpus = []
-for i in range(len(sentences)):
-    review = re.sub('[^a-zA-Z]', ' ', sentences[i])
-    # here it is a regex that removes special symbols like=>  . , ? /
-    # sub is method of regular expression which replaces every letter other than alphabet into spaces and applying on every sentences.
-    review = review.lower()
-    # lowering the word
-    review = review.split()
-    # slipiting the sentences, will get list of words.
-    review = [ps.stem(word) for word in review if not word in set(stopwords.words('english'))]
-    # doing stemming
-    review = ' '.join(review)
-    corpus.append(review)
+# Preprocess the training data
+preprocessed_corpus = {}
+similarities = {}
+for intent, sentences in corpus.items():
+    preprocessed_corpus[intent] = [preprocess(sentence) for sentence in sentences]
 
-# Creating the Bag of Words model
-#document matrix
-from sklearn.feature_extraction.text import CountVectorizer
-# pip install scikit-learn
-cv = CountVectorizer(max_features=1500)
-X = cv.fit_transform(corpus).toarray()
-# fit_transform is responsible for creating a 2d matrix
-print(X)
-
-# sentence is normal and applying stemming and joining it, makes it corpus.
+def generate_response(text):
+    # Preprocess the user's input
+    text = preprocess(text)
+    # Compute the similarity between the user's input and the training data
+    similarities = {}
+    for intent, sentences in preprocessed_corpus.items():
+        similarity = 1 - nltk.jaccard_distance(set(intent.split()), set(text.split()))
+        similarities[intent] = similarity
+    # Return the most similar intent
+    intent = max(similarities, key=similarities.get)
+    # Return a random response from the corresponding intent
+    return random.choice(corpus[intent])
 
 
+# Define a function to generate a response to a user's input
+
+
+# Test the chatbot
+while True:
+    user_input = input("You: ")
+    if user_input.lower() == 'exit':
+        break
+    response = generate_response(user_input)
+    print("Bot:", response)
